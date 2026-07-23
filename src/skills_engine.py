@@ -364,7 +364,7 @@ SKILL_IMPLICATIONS = {
     "react native": {"react", "javascript"},
     
     "node.js": {"javascript"},
-   
+
     "fastapi": {"python", "rest api"},
     "django": {"python", "rest api"},
     "flask": {"python", "rest api"},
