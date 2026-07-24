@@ -1,78 +1,25 @@
-"""
-database.py
-Persistent scan history using SQLite.
-Saves every resume scan with skills, predicted role, skill count, and timestamp.
-Proves backend/database knowledge to evaluators.
-"""
-import sqlite3
-import json
-import datetime
-import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "history.db")
+# For now, we will use a local SQLite file for development. 
+# It takes only 1 line of code to swap this to a live Cloud PostgreSQL URL later!
+SQLALCHEMY_DATABASE_URL = "sqlite:///./saas_app.db"
 
-def _get_conn():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS scans (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename    TEXT,
-            skills      TEXT,
-            role        TEXT,
-            skill_count INTEGER DEFAULT 0,
-            timestamp   TEXT
-        )
-    """)
+# Create the database engine
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 
-    # Add column if upgrading from an older schema.
+# Create a session maker to talk to the database
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# This Base class is what all our database models will inherit from
+Base = declarative_base()
+
+# Dependency to get the database session in our API endpoints
+def get_db():
+    db = SessionLocal()
     try:
-        conn.execute("ALTER TABLE scans ADD COLUMN skill_count INTEGER DEFAULT 0")
-    except Exception:
-        pass
-
-    conn.commit()
-    return conn
-
-def save_scan(filename: str, skills: set, role: str) -> None:
-    """Save a resume scan to the history database."""
-    try:
-        conn = _get_conn()
-        conn.execute(
-            "INSERT INTO scans (filename, skills, role, skill_count, timestamp) "
-            "VALUES (?,?,?,?,?)",
-            (
-                filename,
-                json.dumps(sorted(list(skills))),
-                role,
-                len(skills),
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-            )
-        )
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"[DB] Save failed: {e}")
-
-def get_history() -> list:
-    """Retrieve last 10 scans from history."""
-    try:
-        conn = _get_conn()
-        rows = conn.execute(
-            "SELECT filename, role, skills, skill_count, timestamp "
-            "FROM scans ORDER BY id DESC LIMIT 10"
-        ).fetchall()
-        conn.close()
-        return rows
-    except Exception as e:
-        print(f"[DB] Read failed: {e}")
-        return []
-
-def clear_history() -> None:
-    """Delete all scan history."""
-    try:
-        conn = _get_conn()
-        conn.execute("DELETE FROM scans")
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"[DB] Clear failed: {e}")
+        yield db
+    finally:
+        db.close()
