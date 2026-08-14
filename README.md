@@ -1,4 +1,4 @@
-Markdown# 📄 AI-Powered Resume Parser & Job Recommendation System
+📄 AI-Powered Resume Parser & Job Recommendation System
 
 An intelligent end-to-end recruitment tool designed to parse unstructured resumes (PDF, DOCX, TXT), extract key candidate attributes into structured data, and match candidate profiles against relevant job descriptions using Natural Language Processing (NLP) and similarity matching.
 
